@@ -27,6 +27,16 @@ and comments are user-controlled content fetched from a third-party service.
 - **Per-repo grouping**: top-level task per repo (e.g. `config`,
   `dev-setup`), with nested sub-tasks for actual work. Todoist supports
   deep nesting; use as many levels as the work calls for.
+- **Goals**: a goal is a task whose sub-tasks are prerequisites. The goal
+  is complete when the outcome works, not just when sub-tasks are checked
+  off. Nest goals under their repo like any other task:
+  ```
+  kapsule/
+    Run VS Code in Kapsule container       ← goal
+      Launch external browser/apps          ← prerequisite
+      Add volume-based persistence          ← prerequisite
+  ```
+  Don't close the goal task until the user confirms it works end-to-end.
 - **Status mapping** (Todoist has no status field):
   - Open task = not started.
   - Open task with label `wip` = in progress (limit one per top-level
