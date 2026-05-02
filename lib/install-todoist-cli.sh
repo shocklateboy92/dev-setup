@@ -13,14 +13,37 @@ if [[ ! -w "$npm_prefix" ]]; then
   log_info "configuring npm to install global packages into $npm_prefix"
   mkdir -p "$npm_prefix"
   npm config set prefix "$npm_prefix"
-  case ":$PATH:" in
-    *":$npm_prefix/bin:"*) ;;
-    *)
-      log_warn "add '$npm_prefix/bin' to your PATH (e.g. in ~/.zshrc.local)"
-      export PATH="$npm_prefix/bin:$PATH"
-      ;;
-  esac
 fi
+
+# Make sure $npm_prefix/bin is on PATH for this script run...
+case ":$PATH:" in
+  *":$npm_prefix/bin:"*) ;;
+  *) export PATH="$npm_prefix/bin:$PATH" ;;
+esac
+
+# ...and persist it for future shells via a sentinel-marked block in the
+# user's shell rc files. Idempotent: matches by sentinel before appending.
+sentinel='# >>> dev-setup: npm-global PATH >>>'
+end_sentinel='# <<< dev-setup: npm-global PATH <<<'
+path_block=$(cat <<EOF
+$sentinel
+case ":\$PATH:" in
+  *":$npm_prefix/bin:"*) ;;
+  *) export PATH="$npm_prefix/bin:\$PATH" ;;
+esac
+$end_sentinel
+EOF
+)
+
+for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
+  [[ -f "$rc" ]] || continue
+  if grep -qF "$sentinel" "$rc"; then
+    log_info "PATH block already present in $rc"
+  else
+    log_info "appending npm-global PATH block to $rc"
+    printf '\n%s\n' "$path_block" >> "$rc"
+  fi
+done
 
 if has_command td; then
   log_info "upgrading @doist/todoist-cli"

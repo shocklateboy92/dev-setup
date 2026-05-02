@@ -68,4 +68,7 @@ for module in "${modules[@]}"; do
   source "$module_path"
 done
 
-log_info "done. Re-run 'curl ... | bash' or 'cd $INSTALL_ROOT && git pull && ./install.sh' to update."
+log_info "done."
+log_info "if 'td' isn't found, start a new shell or 'source ~/.zshrc' / 'source ~/.bashrc'."
+log_info "to authenticate Todoist, run: td auth login"
+log_info "to update later: cd $INSTALL_ROOT && git pull && ./install.sh"
