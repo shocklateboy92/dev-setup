@@ -65,9 +65,14 @@ fi
 
 log_info "td CLI: $("$td_bin" --version 2>/dev/null || echo 'installed')"
 
-# Install the universal agent skill (~/.agents/skills/todoist-cli/SKILL.md).
-# This is the Doist-maintained command reference; our Copilot instructions
-# point agents at it for command syntax. `td skill install` is idempotent
-# (re-runs are safe; auto-updates with future `td` upgrades).
-log_info "installing universal agent skill"
-"$td_bin" skill install universal >/dev/null
+# Install or update the universal agent skill
+# (~/.agents/skills/todoist-cli/SKILL.md). This is the Doist-maintained
+# command reference; our Copilot instructions point agents at it for
+# command syntax. `td skill install` errors if the file exists, so try
+# update first and fall back to install on first run.
+if "$td_bin" skill update universal >/dev/null 2>&1; then
+  log_info "updated universal agent skill"
+else
+  log_info "installing universal agent skill"
+  "$td_bin" skill install universal >/dev/null
+fi
