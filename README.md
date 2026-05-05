@@ -13,22 +13,46 @@ curl -fsSL https://raw.githubusercontent.com/shocklateboy92/dev-setup/main/insta
 This will:
 
 1. Clone this repo to `~/.local/share/dev-setup`.
-2. Install the [Doist `td` CLI](https://github.com/Doist/todoist-cli) via
+2. Fetch long-lived credentials from [Infisical](https://infisical.com)
+   and write them to the right `~/.config/<tool>/` paths (mode 0600).
+   Requires `infisical login` + `infisical init` in `~/.config/infisical/`
+   beforehand. Hard-fails if either is missing — see [Prerequisites](#prerequisites).
+3. Install the [Doist `td` CLI](https://github.com/Doist/todoist-cli) via
    `npm i -g @doist/todoist-cli` and the universal agent skill at
-   `~/.agents/skills/todoist-cli/SKILL.md`.
-3. Run `td auth login` (opens a browser; falls back to a code) unless
-   already authenticated or `TODOIST_API_TOKEN` is set. Token is stored in
-   the OS credential manager (libsecret on Linux).
-4. Symlink files from `instructions/` into the local VS Code prompts
+   `~/.agents/skills/todoist-cli/SKILL.md`. Auth is already in place from
+   step 2.
+4. Install [opencode](https://opencode.ai) via the system package manager
+   (or the official installer on distros without a package). Required by
+   VoxPilot at runtime.
+5. Download and install the latest [VoxPilot](https://github.com/shocklateboy92/voxpilot)
+   release tarball to `~/.local/share/voxpilot/` (overridable via `VOXPILOT_ROOT`),
+   symlink the systemd unit into `~/.config/systemd/user/`, daemon-reload,
+   enable, and start. Optional `voxpilot-tsnet` sibling unit is enabled when
+   `TS_AUTHKEY` is set in `~/.config/voxpilot/tsnet.env` (or persisted state
+   already exists). Linux-only; skipped on macOS.
+6. Symlink files from `instructions/` into the local VS Code prompts
    directory (both desktop and Remote-SSH server paths, if present).
 
-The script is idempotent. Re-running it upgrades the npm package, the
-agent skill, and refreshes the symlinks.
+The script is idempotent. Re-running it refreshes secrets, upgrades
+packages, and refreshes the symlinks.
 
-### Headless / CI
+## Prerequisites
 
-If there is no TTY, the auth step is skipped — set `TODOIST_API_TOKEN` in
-the environment instead, or run `td auth login` interactively later.
+The secrets module requires Infisical to be set up on the new machine
+before running `install.sh`:
+
+```sh
+# 1. Install the CLI (one of these)
+npm i -g @infisical/cli
+# or: yay -S infisical-bin   (Arch)
+# or: see https://infisical.com/docs/cli/overview
+
+# 2. Browser auth (one-time per machine)
+infisical login
+
+# 3. Pin the project (one-time per machine)
+mkdir -p ~/.config/infisical && cd ~/.config/infisical && infisical init
+```
 
 ## Update
 
@@ -49,8 +73,10 @@ dev-setup/
 ├── install.sh                       # entry point (curl-piped)
 ├── lib/
 │   ├── common.sh                    # logging + OS helpers
+│   ├── install-secrets.sh           # fetch credentials from Infisical
 │   ├── install-todoist-cli.sh       # td + universal agent skill
-│   ├── setup-todoist-auth.sh        # td auth login (idempotent)
+│   ├── install-opencode.sh          # opencode binary (pacman/brew/installer)
+│   ├── install-voxpilot.sh          # download tarball + systemd --user unit
 │   └── install-instructions.sh      # symlinks into VS Code prompts
 └── instructions/
     └── todoist.instructions.md      # Copilot conventions for Todoist
@@ -79,3 +105,24 @@ The conventions file points agents at the SKILL.md for command syntax.
    `instructions/<thing>.instructions.md` file —
    `install-instructions.sh` will symlink any `*.instructions.md`
    automatically.
+
+## Adding a new secret
+
+1. Store it in Infisical (run from any directory; `--projectId` is read
+   from `~/.config/infisical/.infisical.json`):
+
+   ```sh
+   cd ~/.config/infisical
+   infisical secrets folders create --env=prod --name=<tool> --path=/
+   infisical secrets set --env=prod --path=/<tool> \
+     "<KEY>=@/path/to/local/config-file"
+   ```
+
+2. Append a row to the `SECRETS=(...)` array in
+   `lib/install-secrets.sh`:
+
+   ```
+   "/<tool>|<KEY>|$HOME/.config/<tool>/<file>|0600"
+   ```
+
+3. Re-run `install.sh` on every machine that needs it.

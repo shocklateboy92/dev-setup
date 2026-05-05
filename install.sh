@@ -52,8 +52,10 @@ log_info "dev-setup root: $INSTALL_ROOT"
 
 # Order matters: CLI before auth (auth uses the CLI), instructions last.
 modules=(
+  "lib/install-secrets.sh"
   "lib/install-todoist-cli.sh"
-  "lib/setup-todoist-auth.sh"
+  "lib/install-opencode.sh"
+  "lib/install-voxpilot.sh"
   "lib/install-instructions.sh"
 )
 
