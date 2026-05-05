@@ -41,6 +41,25 @@ for dir in "${candidate_dirs[@]}"; do
   done
 done
 
+# OpenCode global rules: symlink the Todoist instructions to ~/.config/opencode/AGENTS.md.
+# OpenCode reads AGENTS.md as always-on rules, the equivalent of VS Code's
+# *.instructions.md prompt files. The skill itself (~/.agents/skills/todoist-cli)
+# is already auto-discovered by OpenCode and needs no install step here.
+opencode_dir="$HOME/.config/opencode"
+opencode_src="$instructions_src/todoist.instructions.md"
+if [[ -d "$opencode_dir" && -f "$opencode_src" ]]; then
+  target="$opencode_dir/AGENTS.md"
+  if [[ -L "$target" && "$(readlink "$target")" == "$opencode_src" ]]; then
+    log_info "up to date: $target"
+  elif [[ -e "$target" && ! -L "$target" ]]; then
+    log_warn "skipping $target (exists and is not a symlink; remove it manually to let dev-setup manage it)"
+  else
+    ln -sfn "$opencode_src" "$target"
+    log_info "linked $target -> $opencode_src"
+    linked_any=1
+  fi
+fi
+
 if [[ $linked_any -eq 0 ]]; then
   log_info "no new instruction symlinks created"
 fi
