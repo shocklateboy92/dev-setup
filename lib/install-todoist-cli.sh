@@ -1,12 +1,16 @@
 # shellcheck shell=bash
 # Install or upgrade the Doist Todoist CLI (`td`) and its agent skill.
 # Sourced by install.sh after lib/common.sh.
+#
+# Assumes shell/env.sh has already prepended ~/.npm-global/bin to PATH for
+# this run (install-shell-env.sh runs first and sources it in-process).
 
 ensure_system_package node nodejs nodejs nodejs
 ensure_system_package npm npm npm node
 
-# npm prefix for global installs without sudo. Use ~/.npm-global if the user
-# hasn't already configured a writable prefix.
+# npm prefix for global installs without sudo. shell/env.sh hardcodes
+# ~/.npm-global on PATH for future shells; mirror that choice here when the
+# system prefix isn't writable so installs land where the rcfile expects.
 npm_prefix="$(npm config get prefix 2>/dev/null || true)"
 if [[ ! -w "$npm_prefix" ]]; then
   npm_prefix="$HOME/.npm-global"
@@ -14,36 +18,6 @@ if [[ ! -w "$npm_prefix" ]]; then
   mkdir -p "$npm_prefix"
   npm config set prefix "$npm_prefix"
 fi
-
-# Make sure $npm_prefix/bin is on PATH for this script run...
-case ":$PATH:" in
-  *":$npm_prefix/bin:"*) ;;
-  *) export PATH="$npm_prefix/bin:$PATH" ;;
-esac
-
-# ...and persist it for future shells via a sentinel-marked block in the
-# user's shell rc files. Idempotent: matches by sentinel before appending.
-sentinel='# >>> dev-setup: npm-global PATH >>>'
-end_sentinel='# <<< dev-setup: npm-global PATH <<<'
-path_block=$(cat <<EOF
-$sentinel
-case ":\$PATH:" in
-  *":$npm_prefix/bin:"*) ;;
-  *) export PATH="$npm_prefix/bin:\$PATH" ;;
-esac
-$end_sentinel
-EOF
-)
-
-for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
-  [[ -f "$rc" ]] || continue
-  if grep -qF "$sentinel" "$rc"; then
-    log_info "PATH block already present in $rc"
-  else
-    log_info "appending npm-global PATH block to $rc"
-    printf '\n%s\n' "$path_block" >> "$rc"
-  fi
-done
 
 if has_command td; then
   log_info "upgrading @doist/todoist-cli"

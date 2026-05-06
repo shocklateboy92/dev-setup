@@ -50,10 +50,20 @@ source "$INSTALL_ROOT/lib/common.sh"
 
 log_info "dev-setup root: $INSTALL_ROOT"
 
-# Order matters: CLI before auth (auth uses the CLI), instructions last.
+# Order matters:
+# - shell-env first: installs the rcfile sentinel block + sources shell/env.sh
+#   in this process, so subsequent modules see ~/.npm-global/bin on PATH and
+#   $KAGI_SESSION_TOKEN exported (if its file already exists from a previous
+#   secrets bootstrap).
+# - secrets next: materializes credential files (e.g. the kagi token file
+#   that shell/env.sh reads) before any module that depends on them.
+# - CLIs in the middle.
+# - instructions last so they can reference any installed CLI/skill paths.
 modules=(
+  "lib/install-shell-env.sh"
   "lib/install-secrets.sh"
   "lib/install-todoist-cli.sh"
+  "lib/install-kagi-cli.sh"
   "lib/install-opencode.sh"
   "lib/install-voxpilot.sh"
   "lib/install-instructions.sh"

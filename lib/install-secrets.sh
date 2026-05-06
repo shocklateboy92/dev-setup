@@ -43,6 +43,7 @@ fi
 SECRETS=(
   "/todoist|TODOIST_CLI_CONFIG|$HOME/.config/todoist-cli/config.json|0600"
   "/gh|HOSTS_YML|$HOME/.config/gh/hosts.yml|0600"
+  "/kagi|KAGI_SESSION_TOKEN|$HOME/.config/kagi/session-token|0600"
 )
 
 fetch_secret() {
