@@ -20,7 +20,8 @@ This will:
 3. Fetch long-lived credentials from [Infisical](https://infisical.com)
    and write them to the right `~/.config/<tool>/` paths (mode 0600).
    Requires `infisical login` beforehand — see [Prerequisites](#prerequisites).
-   On TTYs, runs `infisical init` for you on first install.
+   Writes `~/.config/infisical/.infisical.json` itself (no interactive
+   `init` needed).
 4. Install the [Doist `td` CLI](https://github.com/Doist/todoist-cli) via
    `npm i -g @doist/todoist-cli` and the universal agent skill at
    `~/.agents/skills/todoist-cli/SKILL.md`. Auth is already in place from
@@ -63,11 +64,10 @@ npm i -g @infisical/cli
 infisical login
 ```
 
-That's it — `install.sh` runs `infisical init` for you on the first run
-(picks the org/project interactively, drops `.infisical.json` in
-`~/.config/infisical/`). The `curl | bash` path has no TTY, so on that
-path you'll get an error telling you to run `infisical init` manually,
-then re-run `install.sh`.
+That's it. `install.sh` writes `~/.config/infisical/.infisical.json`
+itself with a hardcoded `workspaceId` (an opaque, non-secret project
+identifier) — no interactive `infisical init` needed. Override the
+default with `INFISICAL_WORKSPACE_ID=...` if you've forked this repo.
 
 ## Update
 

@@ -15,6 +15,13 @@
 
 INFISICAL_ENV="${INFISICAL_ENV:-prod}"
 
+# Default workspace ID for this personal setup. The workspace ID is not a
+# credential; it's an opaque project identifier (think GitHub org login).
+# Without an auth token from `infisical login` it grants nothing. Hardcoding
+# it lets us skip the interactive `infisical init` flow entirely on fresh
+# machines. Override with INFISICAL_WORKSPACE_ID for forks / other tenants.
+INFISICAL_WORKSPACE_ID="${INFISICAL_WORKSPACE_ID:-38eb9fac-447b-46a9-9ed2-bdfb32e0e8f0}"
+
 ensure_system_package infisical infisical infisical infisical || {
   log_error "secrets: install infisical CLI manually:"
   log_error "  npm i -g @infisical/cli   (or see https://infisical.com/docs/cli/overview)"
@@ -28,27 +35,22 @@ if ! infisical user get token >/dev/null 2>&1; then
   return 1
 fi
 
-# Verify project is initialized in $HOME/.config/infisical. `infisical init`
-# unconditionally drops .infisical.json in $PWD with no flag to redirect, so
-# we cd there first. The init flow itself is interactive (org + project
-# picker, no non-interactive mode); run it inline if we have a TTY,
-# otherwise tell the user what to do and bail.
+# Materialize ~/.config/infisical/.infisical.json ourselves instead of
+# shelling out to `infisical init`, which is purely interactive (no flags,
+# no env-var override) and would block in a `curl | bash` install. The file
+# format is trivial — only `workspaceId` matters for `secrets get`.
 infisical_dir="$HOME/.config/infisical"
-if [[ ! -f "$infisical_dir/.infisical.json" ]]; then
-  if [[ -t 0 && -t 1 ]]; then
-    log_info "secrets: no .infisical.json at $infisical_dir; running 'infisical init' interactively"
-    mkdir -p "$infisical_dir"
-    ( cd "$infisical_dir" && infisical init )
-  else
-    log_error "secrets: no .infisical.json found at $infisical_dir"
-    log_error "  no TTY available for interactive init; run manually:"
-    log_error "    mkdir -p $infisical_dir && cd $infisical_dir && infisical init"
-    return 1
-  fi
-fi
-if [[ ! -f "$infisical_dir/.infisical.json" ]]; then
-  log_error "secrets: init did not produce $infisical_dir/.infisical.json; aborting"
-  return 1
+infisical_project="$infisical_dir/.infisical.json"
+mkdir -p "$infisical_dir"
+if [[ ! -f "$infisical_project" ]]; then
+  log_info "secrets: writing $infisical_project (workspace $INFISICAL_WORKSPACE_ID)"
+  cat > "$infisical_project" <<EOF
+{
+    "workspaceId": "$INFISICAL_WORKSPACE_ID",
+    "defaultEnvironment": "",
+    "gitBranchToEnvironmentMapping": null
+}
+EOF
 fi
 
 # Manifest. One row per file to materialize.
