@@ -7,52 +7,67 @@ Personal bootstrap for AI tooling and conventions across machines.
 On any new machine or container:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/shocklateboy92/dev-setup/main/install.sh | bash
+curl -fsSL https://setup.lasath.dev | bash
 ```
 
 This will:
 
 1. Clone this repo to `~/.local/share/dev-setup`.
-2. Fetch long-lived credentials from [Infisical](https://infisical.com)
+2. Add a sentinel-marked block to `~/.zshrc` / `~/.bashrc` that sources
+   `shell/env.sh` from the clone. Single source of truth for env vars
+   and PATH entries that the modules below depend on (npm-global PATH,
+   `KAGI_SESSION_TOKEN`, etc.) — edit `shell/env.sh` to add new ones.
+3. Fetch long-lived credentials from [Infisical](https://infisical.com)
    and write them to the right `~/.config/<tool>/` paths (mode 0600).
-   Requires `infisical login` + `infisical init` in `~/.config/infisical/`
-   beforehand. Hard-fails if either is missing — see [Prerequisites](#prerequisites).
-3. Install the [Doist `td` CLI](https://github.com/Doist/todoist-cli) via
+   Requires `infisical login` beforehand — see [Prerequisites](#prerequisites).
+   On TTYs, runs `infisical init` for you on first install.
+4. Install the [Doist `td` CLI](https://github.com/Doist/todoist-cli) via
    `npm i -g @doist/todoist-cli` and the universal agent skill at
    `~/.agents/skills/todoist-cli/SKILL.md`. Auth is already in place from
-   step 2.
-4. Install [opencode](https://opencode.ai) via the system package manager
+   step 3.
+5. Install the [`kagi` CLI](https://github.com/Microck/kagi-cli) via
+   `npm i -g kagi-cli`. Auth (`KAGI_SESSION_TOKEN`) is exported by
+   `shell/env.sh` from the file step 3 materialized.
+6. Install [opencode](https://opencode.ai) via the system package manager
    (or the official installer on distros without a package). Required by
    VoxPilot at runtime.
-5. Download and install the latest [VoxPilot](https://github.com/shocklateboy92/voxpilot)
+7. Download and install the latest [VoxPilot](https://github.com/shocklateboy92/voxpilot)
    release tarball to `~/.local/share/voxpilot/` (overridable via `VOXPILOT_ROOT`),
    symlink the systemd unit into `~/.config/systemd/user/`, daemon-reload,
    enable, and start. Optional `voxpilot-tsnet` sibling unit is enabled when
    `TS_AUTHKEY` is set in `~/.config/voxpilot/tsnet.env` (or persisted state
    already exists). Linux-only; skipped on macOS.
-6. Symlink files from `instructions/` into the local VS Code prompts
-   directory (both desktop and Remote-SSH server paths, if present).
+8. Distribute `instructions/*.instructions.md` to every installed agent
+   runtime: symlinked into VS Code prompts dirs for Copilot, and
+   concatenated (with frontmatter stripped) into
+   `~/.config/opencode/AGENTS.md` for [opencode](https://opencode.ai).
+   Skills installed at `~/.agents/skills/*/` are symlinked into
+   `~/.config/opencode/skills/` so opencode discovers them too.
 
 The script is idempotent. Re-running it refreshes secrets, upgrades
 packages, and refreshes the symlinks.
 
 ## Prerequisites
 
-The secrets module requires Infisical to be set up on the new machine
-before running `install.sh`:
+The secrets module requires Infisical to be authenticated on the new
+machine before running `install.sh`:
 
 ```sh
-# 1. Install the CLI (one of these)
+# 1. Install the CLI (install.sh does this for you on Arch/Debian/macOS;
+#    only needed if its package-manager autodetection misses)
 npm i -g @infisical/cli
 # or: yay -S infisical-bin   (Arch)
 # or: see https://infisical.com/docs/cli/overview
 
 # 2. Browser auth (one-time per machine)
 infisical login
-
-# 3. Pin the project (one-time per machine)
-mkdir -p ~/.config/infisical && cd ~/.config/infisical && infisical init
 ```
+
+That's it — `install.sh` runs `infisical init` for you on the first run
+(picks the org/project interactively, drops `.infisical.json` in
+`~/.config/infisical/`). The `curl | bash` path has no TTY, so on that
+path you'll get an error telling you to run `infisical init` manually,
+then re-run `install.sh`.
 
 ## Update
 
@@ -71,15 +86,21 @@ re-run `./install.sh` from the clone (or pipe the curl command again).
 ```
 dev-setup/
 ├── install.sh                       # entry point (curl-piped)
+├── shell/
+│   └── env.sh                       # env vars + PATH for interactive shells
 ├── lib/
 │   ├── common.sh                    # logging + OS helpers
+│   ├── install-shell-env.sh         # rcfile sentinel block sourcing shell/env.sh
 │   ├── install-secrets.sh           # fetch credentials from Infisical
 │   ├── install-todoist-cli.sh       # td + universal agent skill
+│   ├── install-kagi-cli.sh          # kagi (web search for agents)
 │   ├── install-opencode.sh          # opencode binary (pacman/brew/installer)
 │   ├── install-voxpilot.sh          # download tarball + systemd --user unit
-│   └── install-instructions.sh      # symlinks into VS Code prompts
+│   └── install-instructions.sh      # VS Code prompts symlinks +
+│                                    # opencode AGENTS.md / skills
 └── instructions/
-    └── todoist.instructions.md      # Copilot conventions for Todoist
+    ├── todoist.instructions.md      # conventions for the td CLI
+    └── kagi.instructions.md         # conventions for the kagi CLI
 ```
 
 ## How the Todoist integration is split
@@ -101,10 +122,13 @@ The conventions file points agents at the SKILL.md for command syntax.
 1. Drop a new `lib/install-<thing>.sh` (sourced; may use `log_info` /
    `ensure_system_package` from `lib/common.sh`).
 2. Append it to the `modules=(...)` list in `install.sh`.
-3. If the tool comes with agent guidance, add an
-   `instructions/<thing>.instructions.md` file —
-   `install-instructions.sh` will symlink any `*.instructions.md`
-   automatically.
+3. If the tool needs an env var or to extend `PATH` in interactive
+   shells, add lines to `shell/env.sh` directly (single tracked file,
+   no per-module rcfile mutations).
+4. If the tool comes with agent guidance, add an
+   `instructions/<thing>.instructions.md` file — `install-instructions.sh`
+   will symlink it into VS Code prompts dirs and fold it into the
+   generated `~/.config/opencode/AGENTS.md` automatically.
 
 ## Adding a new secret
 

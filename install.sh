@@ -2,7 +2,8 @@
 # dev-setup entry point.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/shocklateboy92/dev-setup/main/install.sh | bash
+#   curl -fsSL https://setup.lasath.dev | bash
+#   (302s to https://raw.githubusercontent.com/shocklateboy92/dev-setup/main/install.sh)
 #
 # Idempotent. Safe to re-run.
 
