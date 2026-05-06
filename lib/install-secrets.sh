@@ -28,11 +28,26 @@ if ! infisical user get token >/dev/null 2>&1; then
   return 1
 fi
 
-# Verify project is initialized in $HOME/.config/infisical (where we ran init).
+# Verify project is initialized in $HOME/.config/infisical. `infisical init`
+# unconditionally drops .infisical.json in $PWD with no flag to redirect, so
+# we cd there first. The init flow itself is interactive (org + project
+# picker, no non-interactive mode); run it inline if we have a TTY,
+# otherwise tell the user what to do and bail.
 infisical_dir="$HOME/.config/infisical"
 if [[ ! -f "$infisical_dir/.infisical.json" ]]; then
-  log_error "secrets: no .infisical.json found at $infisical_dir"
-  log_error "  run: cd $infisical_dir && infisical init"
+  if [[ -t 0 && -t 1 ]]; then
+    log_info "secrets: no .infisical.json at $infisical_dir; running 'infisical init' interactively"
+    mkdir -p "$infisical_dir"
+    ( cd "$infisical_dir" && infisical init )
+  else
+    log_error "secrets: no .infisical.json found at $infisical_dir"
+    log_error "  no TTY available for interactive init; run manually:"
+    log_error "    mkdir -p $infisical_dir && cd $infisical_dir && infisical init"
+    return 1
+  fi
+fi
+if [[ ! -f "$infisical_dir/.infisical.json" ]]; then
+  log_error "secrets: init did not produce $infisical_dir/.infisical.json; aborting"
   return 1
 fi
 
