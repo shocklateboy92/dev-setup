@@ -6,8 +6,6 @@
 # Layout:
 #   ~/.local/share/voxpilot/                              -- extracted tarball
 #   ~/.config/systemd/user/voxpilot.service               -- symlink into above
-#   ~/.config/systemd/user/voxpilot-tsnet.service         -- optional, symlink
-#   ~/.config/voxpilot/tsnet.env                          -- optional, secrets
 #
 # Re-running fetches the latest release, re-extracts, and restarts the service.
 
@@ -78,9 +76,6 @@ if systemctl --user is-active --quiet voxpilot.service 2>/dev/null; then
   log_info "voxpilot: stopping running service for upgrade"
   systemctl --user stop voxpilot.service || true
 fi
-if systemctl --user is-active --quiet voxpilot-tsnet.service 2>/dev/null; then
-  systemctl --user stop voxpilot-tsnet.service || true
-fi
 
 log_info "voxpilot: extracting to $VOXPILOT_ROOT"
 # tar's --overwrite ensures we replace files cleanly. Note the tarball's top
@@ -111,32 +106,19 @@ systemctl --user enable --quiet voxpilot.service
 systemctl --user restart voxpilot.service
 log_info "voxpilot: service started -- check 'systemctl --user status voxpilot'"
 
-# --- optional tsnet-proxy -------------------------------------------------
-tsnet_env="$HOME/.config/voxpilot/tsnet.env"
-tsnet_state_dir="$HOME/.local/state/voxpilot-tsnet"
-
-# Detect tsnet config: either an auth key in tsnet.env or persisted state
-# from a previous run.
-tsnet_configured=0
-if [[ -f "$tsnet_env" ]] && grep -Eq '^TS_AUTHKEY=.+' "$tsnet_env"; then
-  tsnet_configured=1
-fi
-if [[ -d "$tsnet_state_dir" ]] && [[ -n "$(ls -A "$tsnet_state_dir" 2>/dev/null)" ]]; then
-  tsnet_configured=1
-fi
-
-if [[ $tsnet_configured -eq 1 ]]; then
-  ln -sfn "$VOXPILOT_ROOT/systemd/voxpilot-tsnet.service" \
-          "$unit_dir/voxpilot-tsnet.service"
-  log_info "voxpilot-tsnet: linked unit -> $unit_dir/voxpilot-tsnet.service"
+# --- cleanup legacy tsnet-proxy -------------------------------------------
+# The tsnet (Tailscale) HTTPS proxy was removed from VoxPilot. Tear down any
+# lingering unit/state from previous installs so we don't leave a dead
+# service enabled.
+legacy_tsnet_unit="$HOME/.config/systemd/user/voxpilot-tsnet.service"
+if [[ -L "$legacy_tsnet_unit" || -f "$legacy_tsnet_unit" ]]; then
+  log_info "voxpilot-tsnet: removing legacy unit (Tailscale proxy was dropped upstream)"
+  systemctl --user disable --quiet --now voxpilot-tsnet.service 2>/dev/null || true
+  rm -f "$legacy_tsnet_unit"
   systemctl --user daemon-reload
-  systemctl --user enable --quiet voxpilot-tsnet.service
-  systemctl --user restart voxpilot-tsnet.service
-  log_info "voxpilot-tsnet: service started"
-else
-  log_info "voxpilot-tsnet: not configured (no TS_AUTHKEY, no state); skipping."
-  log_info "  to enable: create $tsnet_env with TS_AUTHKEY=<key> and re-run install.sh"
 fi
+# Leave ~/.config/voxpilot/tsnet.env and ~/.local/state/voxpilot-tsnet on
+# disk -- they may contain user secrets/state. The user can rm them at will.
 
 log_info "voxpilot: deployed -- $VOXPILOT_ROOT (version $version)"
 log_info "  logs:    journalctl --user -u voxpilot -f"

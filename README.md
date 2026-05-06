@@ -35,9 +35,7 @@ This will:
 7. Download and install the latest [VoxPilot](https://github.com/shocklateboy92/voxpilot)
    release tarball to `~/.local/share/voxpilot/` (overridable via `VOXPILOT_ROOT`),
    symlink the systemd unit into `~/.config/systemd/user/`, daemon-reload,
-   enable, and start. Optional `voxpilot-tsnet` sibling unit is enabled when
-   `TS_AUTHKEY` is set in `~/.config/voxpilot/tsnet.env` (or persisted state
-   already exists). Linux-only; skipped on macOS.
+   enable, and start. Linux-only; skipped on macOS.
 8. Distribute `instructions/*.instructions.md` to every installed agent
    runtime: symlinked into VS Code prompts dirs for Copilot, and
    concatenated (with frontmatter stripped) into
