@@ -36,7 +36,16 @@ This will:
    release tarball to `~/.local/share/voxpilot/` (overridable via `VOXPILOT_ROOT`),
    symlink the systemd unit into `~/.config/systemd/user/`, daemon-reload,
    enable, and start. Linux-only; skipped on macOS.
-8. Distribute `instructions/*.instructions.md` to every installed agent
+8. Symlink `bin/setup-ha-automount` onto `~/.local/bin/` (Linux only).
+   This is a sudo-requiring helper script that, when run, installs a
+   system-level SSHFS automount of the Home Assistant SSH addon's `/config`
+   at `/mnt/ha-config` (lazy-mount on access, idle-unmount after 5 min).
+   The SSH key it uses is materialized from Infisical by step 2. Run
+   `sudo setup-ha-automount` once on the machine you want to act as your
+   HA workbench. On first install the public key (`lib/ha-mount.pub`)
+   needs to be added to the addon's `authorized_keys` and the addon
+   restarted -- one-time, manual.
+9. Distribute `instructions/*.instructions.md` to every installed agent
    runtime: symlinked into VS Code prompts dirs for Copilot, and
    concatenated (with frontmatter stripped) into
    `~/.config/opencode/AGENTS.md` for [opencode](https://opencode.ai).
@@ -94,8 +103,12 @@ dev-setup/
 │   ├── install-kagi-cli.sh          # kagi (web search for agents)
 │   ├── install-opencode.sh          # opencode binary (pacman/brew/installer)
 │   ├── install-voxpilot.sh          # download tarball + systemd --user unit
+│   ├── install-ha-mount.sh          # symlink setup-ha-automount onto PATH
+│   ├── ha-mount.pub                 # public half of the HA SSH key (private in Infisical)
 │   └── install-instructions.sh      # VS Code prompts symlinks +
 │                                    # opencode AGENTS.md / skills
+├── bin/
+│   └── setup-ha-automount           # sudo-requiring system-level SSHFS automount installer
 └── instructions/
     ├── todoist.instructions.md      # conventions for the td CLI
     └── kagi.instructions.md         # conventions for the kagi CLI

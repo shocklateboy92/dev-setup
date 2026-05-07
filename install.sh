@@ -67,6 +67,7 @@ modules=(
   "lib/install-kagi-cli.sh"
   "lib/install-opencode.sh"
   "lib/install-voxpilot.sh"
+  "lib/install-ha-mount.sh"
   "lib/install-instructions.sh"
 )
 
