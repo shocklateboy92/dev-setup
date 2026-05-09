@@ -101,6 +101,19 @@ mkdir -p "$unit_dir"
 ln -sfn "$VOXPILOT_ROOT/systemd/voxpilot.service" "$unit_dir/voxpilot.service"
 log_info "voxpilot: linked unit -> $unit_dir/voxpilot.service"
 
+# Clean up the dev-setup-env.conf drop-in that an earlier version of this
+# script created. The same job is now done declaratively by
+# ~/.config/environment.d/10-dev-setup.conf (see install-environment-d.sh),
+# which doesn't require wrapping ExecStart in bash. Safe to delete this
+# block in a few months once all machines have been re-provisioned.
+legacy_dropin="$unit_dir/voxpilot.service.d/dev-setup-env.conf"
+if [[ -f "$legacy_dropin" ]]; then
+  log_info "voxpilot: removing legacy env drop-in (replaced by environment.d)"
+  rm -f "$legacy_dropin"
+  # Remove the dir too if it's now empty so `systemctl cat` output is clean.
+  rmdir "$unit_dir/voxpilot.service.d" 2>/dev/null || true
+fi
+
 systemctl --user daemon-reload
 systemctl --user enable --quiet voxpilot.service
 systemctl --user restart voxpilot.service

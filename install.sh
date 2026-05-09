@@ -58,11 +58,16 @@ log_info "dev-setup root: $INSTALL_ROOT"
 #   secrets bootstrap).
 # - secrets next: materializes credential files (e.g. the kagi token file
 #   that shell/env.sh reads) before any module that depends on them.
+# - environment-d after secrets: snapshots the same env into systemd's
+#   ~/.config/environment.d so user services (voxpilot, etc.) inherit it
+#   without sourcing shell rc files. Must run before voxpilot so the
+#   service restart at the end of that module sees the new env.
 # - CLIs in the middle.
 # - instructions last so they can reference any installed CLI/skill paths.
 modules=(
   "lib/install-shell-env.sh"
   "lib/install-secrets.sh"
+  "lib/install-environment-d.sh"
   "lib/install-todoist-cli.sh"
   "lib/install-kagi-cli.sh"
   "lib/install-opencode.sh"
