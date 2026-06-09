@@ -34,10 +34,13 @@ small.
 | Need | Command |
 |---|---|
 | Search results | `kagi search "<q>" --format compact \| jq '.data[:5][]\|{title,url,snippet}'` |
-| Quick factual answer | `kagi quick "<q>" --format compact \| jq -r '.message.markdown'` |
 | Summarize URL | `kagi summarize --url <URL> --subscriber --summary-type {summary\|keypoints\|eli5}` |
 | Ask about a page | `kagi ask-page --url <URL> "<q>"` |
 | News | `kagi news --format compact` |
 
 `search` filters: `--time {day,week,month,year}`, `--from-date YYYY-MM-DD`,
 `--region`, `--order recency`, `--snap reddit`.
+
+Avoid `kagi quick` — its LLM-generated answers hallucinate. To answer a
+question from the web, reason over raw `kagi search` snippets, or kick off
+a subagent to search, read pages, and return a cited answer.
