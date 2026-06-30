@@ -24,9 +24,10 @@ exported from the shell rc files (sourced via dev-setup/shell/env.sh,
 backed by `~/.config/kagi/session-token` from Infisical) — works in
 every interactive shell, no per-project `.kagi.toml`.
 
-`KAGI_API_TOKEN` is **not** set on these machines, so `fastgpt`,
-`enrich`, and the public (non-`--subscriber`) `summarize` will fail.
-Use `--subscriber` for `summarize`.
+Use `kagi` only for raw retrieval — `search` and `news`. Avoid every
+LLM-backed subcommand (`quick`, `summarize`, `ask-page`, `fastgpt`,
+`enrich`): they hallucinate. (`KAGI_API_TOKEN` is also unset here, so the
+API-keyed ones fail anyway.)
 
 Always use `--format compact` and pipe through `jq` to keep tool output
 small.
@@ -34,13 +35,11 @@ small.
 | Need | Command |
 |---|---|
 | Search results | `kagi search "<q>" --format compact \| jq '.data[:5][]\|{title,url,snippet}'` |
-| Summarize URL | `kagi summarize --url <URL> --subscriber --summary-type {summary\|keypoints\|eli5}` |
-| Ask about a page | `kagi ask-page --url <URL> "<q>"` |
 | News | `kagi news --format compact` |
 
 `search` filters: `--time {day,week,month,year}`, `--from-date YYYY-MM-DD`,
 `--region`, `--order recency`, `--snap reddit`.
 
-Avoid `kagi quick` — its LLM-generated answers hallucinate. To answer a
-question from the web, reason over raw `kagi search` snippets, or kick off
-a subagent to search, read pages, and return a cited answer.
+To answer a question from the web, reason over raw `kagi search` snippets
+yourself, or kick off a subagent to search, read pages, and return a cited
+answer.
