@@ -8,16 +8,10 @@
 ensure_system_package node nodejs nodejs nodejs
 ensure_system_package npm npm npm node
 
-# npm prefix for global installs without sudo. shell/env.sh hardcodes
-# ~/.npm-global on PATH for future shells; mirror that choice here when the
-# system prefix isn't writable so installs land where the rcfile expects.
-npm_prefix="$(npm config get prefix 2>/dev/null || true)"
-if [[ ! -w "$npm_prefix" ]]; then
-  npm_prefix="$HOME/.npm-global"
-  log_info "configuring npm to install global packages into $npm_prefix"
-  mkdir -p "$npm_prefix"
-  npm config set prefix "$npm_prefix"
-fi
+# npm prefix for global installs without sudo (shared helper in common.sh;
+# sets NPM_GLOBAL_PREFIX). shell/env.sh hardcodes ~/.npm-global on PATH for
+# future shells; the helper mirrors that when the system prefix isn't writable.
+ensure_npm_prefix
 
 if has_command td; then
   log_info "upgrading @doist/todoist-cli"
@@ -28,8 +22,8 @@ npm install -g --silent @doist/todoist-cli >/dev/null
 
 # Resolve the binary even if the npm prefix isn't on PATH yet in this shell.
 td_bin="$(command -v td || true)"
-if [[ -z "$td_bin" && -x "$npm_prefix/bin/td" ]]; then
-  td_bin="$npm_prefix/bin/td"
+if [[ -z "$td_bin" && -x "$NPM_GLOBAL_PREFIX/bin/td" ]]; then
+  td_bin="$NPM_GLOBAL_PREFIX/bin/td"
 fi
 
 if [[ -z "$td_bin" ]]; then
