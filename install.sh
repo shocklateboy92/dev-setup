@@ -64,7 +64,16 @@ log_info "dev-setup root: $INSTALL_ROOT"
 #   service restart at the end of that module sees the new env.
 # - CLIs in the middle.
 # - instructions last so they can reference any installed CLI/skill paths.
-modules=(
+#
+# Profiles pick a named subset of these modules. Each profile keeps the same
+# relative ordering; a profile is *only* an inclusion filter, never a reorder.
+#   personal (default): everything -- the fully-integrated setup on my own
+#                        machines. Infisical-backed secrets, Todoist, HA mount.
+#   work:               no Infisical/Todoist/HA. Kagi still works, but its
+#                        session token is dropped in manually at
+#                        ~/.config/kagi/session-token (see README) rather than
+#                        materialized from Infisical by the secrets module.
+personal_modules=(
   "lib/install-shell-env.sh"
   "lib/install-secrets.sh"
   "lib/install-environment-d.sh"
@@ -75,6 +84,31 @@ modules=(
   "lib/install-ha-mount.sh"
   "lib/install-instructions.sh"
 )
+
+work_modules=(
+  "lib/install-shell-env.sh"
+  "lib/install-environment-d.sh"
+  "lib/install-kagi-cli.sh"
+  "lib/install-opencode.sh"
+  "lib/install-voxpilot.sh"
+  "lib/install-instructions.sh"
+)
+
+# Selected profile. Exported so profile-aware modules (install-instructions.sh)
+# can scope their own behaviour to it.
+DEV_SETUP_PROFILE="${DEV_SETUP_PROFILE:-personal}"
+export DEV_SETUP_PROFILE
+
+case "$DEV_SETUP_PROFILE" in
+  personal) modules=("${personal_modules[@]}") ;;
+  work)     modules=("${work_modules[@]}") ;;
+  *)
+    log_error "unknown DEV_SETUP_PROFILE: '$DEV_SETUP_PROFILE' (expected 'personal' or 'work')"
+    exit 1
+    ;;
+esac
+
+log_info "profile: $DEV_SETUP_PROFILE (${#modules[@]} modules)"
 
 for module in "${modules[@]}"; do
   module_path="$INSTALL_ROOT/$module"
@@ -88,6 +122,15 @@ for module in "${modules[@]}"; do
 done
 
 log_info "done."
-log_info "if 'td' isn't found, start a new shell or 'source ~/.zshrc' / 'source ~/.bashrc'."
-log_info "to authenticate Todoist, run: td auth login"
-log_info "to update later: cd $INSTALL_ROOT && git pull && ./install.sh"
+log_info "if a CLI isn't found, start a new shell or 'source ~/.zshrc' / 'source ~/.bashrc'."
+if [[ "$DEV_SETUP_PROFILE" == "personal" ]]; then
+  log_info "to authenticate Todoist, run: td auth login"
+else
+  log_info "work profile: put your kagi session token at ~/.config/kagi/session-token (chmod 600),"
+  log_info "  then 'source ~/.zshrc' so \$KAGI_SESSION_TOKEN is exported. Log opencode in with 'opencode auth login'."
+fi
+if [[ "$DEV_SETUP_PROFILE" == "personal" ]]; then
+  log_info "to update later: cd $INSTALL_ROOT && git pull && ./install.sh"
+else
+  log_info "to update later: cd $INSTALL_ROOT && git pull && DEV_SETUP_PROFILE=$DEV_SETUP_PROFILE ./install.sh"
+fi

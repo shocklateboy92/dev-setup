@@ -27,6 +27,23 @@ if [[ ! -d "$instructions_src" ]]; then
   return 0
 fi
 
+# Profile-scoped exclusions. Some guidance references a CLI that a given
+# profile doesn't install, in which case shipping it is dead weight (and
+# actively misleading to an agent). Exclude by basename.
+#   work: no Todoist CLI -> drop todoist.instructions.md.
+instr_exclude=()
+if [[ "${DEV_SETUP_PROFILE:-personal}" == "work" ]]; then
+  instr_exclude+=("todoist.instructions.md")
+fi
+
+instr_is_excluded() {
+  local name="$1" ex
+  for ex in "${instr_exclude[@]}"; do
+    [[ "$name" == "$ex" ]] && return 0
+  done
+  return 1
+}
+
 # ---------------------------------------------------------------------------
 # 1. VS Code Copilot symlinks
 # ---------------------------------------------------------------------------
@@ -51,6 +68,16 @@ for dir in "${candidate_dirs[@]}"; do
     [[ -e "$src" ]] || continue
     name="$(basename "$src")"
     target="$dir/$name"
+    if instr_is_excluded "$name"; then
+      # Not wanted on this profile. Remove a stale symlink we previously
+      # created (e.g. switching a machine from personal -> work), but never
+      # touch a file the user manages themselves.
+      if [[ -L "$target" && "$(readlink "$target")" == "$src" ]]; then
+        rm -f "$target"
+        log_info "removed $target (excluded on $DEV_SETUP_PROFILE profile)"
+      fi
+      continue
+    fi
     if [[ -L "$target" && "$(readlink "$target")" == "$src" ]]; then
       log_info "up to date: $target"
     elif [[ -e "$target" && ! -L "$target" ]]; then
@@ -93,6 +120,7 @@ else
     printf '<!-- frontmatter is stripped because opencode rules are global (no applyTo). -->\n\n'
     for src in "$instructions_src"/*.instructions.md; do
       [[ -e "$src" ]] || continue
+      instr_is_excluded "$(basename "$src")" && continue
       printf '<!-- source: %s -->\n' "$(basename "$src")"
       # Strip YAML frontmatter (between the first two `---` lines), if present.
       awk '

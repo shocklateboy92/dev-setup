@@ -55,6 +55,52 @@ This will:
 The script is idempotent. Re-running it refreshes secrets, upgrades
 packages, and refreshes the symlinks.
 
+## Profiles
+
+The install runs a named subset of modules chosen by `DEV_SETUP_PROFILE`
+(default `personal`). A profile is only an inclusion filter — module
+ordering never changes.
+
+| Profile | Modules | Use |
+|---|---|---|
+| `personal` (default) | all of them | my own machines: Infisical-backed secrets, Todoist, HA mount, VoxPilot, kagi, opencode |
+| `work` | shell-env, environment-d, kagi, opencode, voxpilot, instructions | work machine: **no** Infisical / Todoist / HA mount |
+
+Run the `work` profile with the same one-liner, env-prefixed:
+
+```sh
+curl -fsSL https://setup.lasath.dev | DEV_SETUP_PROFILE=work bash
+```
+
+Because `work` skips the secrets module, nothing needs Infisical. Two
+things are handled manually instead:
+
+1. **kagi** — drop your personal session token where `shell/env.sh`
+   already looks for it, then re-source your rc file:
+
+   ```sh
+   mkdir -p ~/.config/kagi
+   printf '%s' '<your-kagi-session-token>' > ~/.config/kagi/session-token
+   chmod 600 ~/.config/kagi/session-token
+   source ~/.zshrc   # exports $KAGI_SESSION_TOKEN
+   ```
+
+   The kagi CLI and `~/.config/environment.d` pick it up unchanged — the
+   Infisical path is the *only* thing being bypassed.
+
+2. **opencode** — auth it yourself (`opencode auth login`) since its
+   `auth.json` normally comes from Infisical.
+
+Todoist guidance (`todoist.instructions.md`) is automatically excluded
+from the generated `AGENTS.md` and VS Code prompts on the `work` profile,
+since the `td` CLI isn't installed there.
+
+Add the profile to the update command too, so re-runs stay scoped:
+
+```sh
+cd ~/.local/share/dev-setup && git pull && DEV_SETUP_PROFILE=work ./install.sh
+```
+
 ## Prerequisites
 
 The secrets module requires Infisical to be authenticated on the new
@@ -132,7 +178,9 @@ The conventions file points agents at the SKILL.md for command syntax.
 
 1. Drop a new `lib/install-<thing>.sh` (sourced; may use `log_info` /
    `ensure_system_package` from `lib/common.sh`).
-2. Append it to the `modules=(...)` list in `install.sh`.
+2. Append it to the profile arrays in `install.sh` — `personal_modules`
+   always, and `work_modules` too if it should run on the work machine
+   (keep the relative ordering consistent between them).
 3. If the tool needs an env var or to extend `PATH` in interactive
    shells, add lines to `shell/env.sh` directly (single tracked file,
    no per-module rcfile mutations).
