@@ -1,0 +1,11 @@
+{
+  "name": "opencode-pty-pinned",
+  "private": true,
+  "description": "Local pinned install of opencode-pty. Upstream 0.3.4 declares bun-pty ^0.4.8, which resolves to 0.4.9, but the plugin's monkey-patch guard (manager.js) throws on anything > 0.4.8. Pin bun-pty to 0.4.8 so the plugin loads. Remove once upstream issue #36 is fixed. https://github.com/shekohex/opencode-pty/issues/36",
+  "dependencies": {
+    "opencode-pty": "0.3.4"
+  },
+  "overrides": {
+    "bun-pty": "0.4.8"
+  }
+}

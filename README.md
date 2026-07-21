@@ -32,11 +32,16 @@ This will:
 6. Install [opencode](https://opencode.ai) via the system package manager
    (or the official installer on distros without a package). Required by
    VoxPilot at runtime.
-7. Download and install the latest [VoxPilot](https://github.com/shocklateboy92/voxpilot)
+7. Install the [opencode-pty](https://github.com/shekohex/opencode-pty)
+   plugin (pinned; bun-pty held at 0.4.8 per upstream issue #36) so the
+   agent gets persistent PTY tools for background/long-running tasks. Wired
+   via an auto-discovered shim in `~/.config/opencode/plugins/`, leaving any
+   hand-maintained `opencode.jsonc` untouched.
+8. Download and install the latest [VoxPilot](https://github.com/shocklateboy92/voxpilot)
    release tarball to `~/.local/share/voxpilot/` (overridable via `VOXPILOT_ROOT`),
    symlink the systemd unit into `~/.config/systemd/user/`, daemon-reload,
    enable, and start. Linux-only; skipped on macOS.
-8. Symlink `bin/setup-ha-automount` onto `~/.local/bin/` (Linux only).
+9. Symlink `bin/setup-ha-automount` onto `~/.local/bin/` (Linux only).
    This is a sudo-requiring helper script that, when run, installs a
    system-level SSHFS automount of the Home Assistant SSH addon's `/config`
    at `/mnt/ha-config` (lazy-mount on access, idle-unmount after 5 min).
@@ -45,7 +50,7 @@ This will:
    HA workbench. On first install the public key (`lib/ha-mount.pub`)
    needs to be added to the addon's `authorized_keys` and the addon
    restarted -- one-time, manual.
-9. Distribute `instructions/*.instructions.md` to every installed agent
+10. Distribute `instructions/*.instructions.md` to every installed agent
    runtime: symlinked into VS Code prompts dirs for Copilot, and
    concatenated (with frontmatter stripped) into
    `~/.config/opencode/AGENTS.md` for [opencode](https://opencode.ai).
@@ -64,7 +69,7 @@ ordering never changes.
 | Profile | Modules | Use |
 |---|---|---|
 | `personal` (default) | all of them | my own machines: Infisical-backed secrets, Todoist, HA mount, VoxPilot, kagi, opencode |
-| `work` | shell-env, environment-d, kagi, opencode, voxpilot, instructions | work machine: **no** Infisical / Todoist / HA mount |
+| `work` | shell-env, environment-d, kagi, opencode, opencode-pty, voxpilot, instructions | work machine: **no** Infisical / Todoist / HA mount |
 
 Run the `work` profile with the same one-liner, env-prefixed:
 
@@ -148,6 +153,9 @@ dev-setup/
 │   ├── install-todoist-cli.sh       # td + universal agent skill
 │   ├── install-kagi-cli.sh          # kagi (web search for agents)
 │   ├── install-opencode.sh          # opencode binary (pacman/brew/installer)
+│   ├── install-opencode-pty.sh      # pinned opencode-pty plugin + global shim
+│   ├── opencode-pty/
+│   │   └── package.json             # pinned manifest (bun-pty held at 0.4.8)
 │   ├── install-voxpilot.sh          # download tarball + systemd --user unit
 │   ├── install-ha-mount.sh          # symlink setup-ha-automount onto PATH
 │   ├── ha-mount.pub                 # public half of the HA SSH key (private in Infisical)

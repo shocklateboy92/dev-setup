@@ -80,6 +80,7 @@ personal_modules=(
   "lib/install-todoist-cli.sh"
   "lib/install-kagi-cli.sh"
   "lib/install-opencode.sh"
+  "lib/install-opencode-pty.sh"
   "lib/install-voxpilot.sh"
   "lib/install-ha-mount.sh"
   "lib/install-instructions.sh"
@@ -90,6 +91,7 @@ work_modules=(
   "lib/install-environment-d.sh"
   "lib/install-kagi-cli.sh"
   "lib/install-opencode.sh"
+  "lib/install-opencode-pty.sh"
   "lib/install-voxpilot.sh"
   "lib/install-instructions.sh"
 )
