@@ -96,9 +96,11 @@ things are handled manually instead:
 2. **opencode** — auth it yourself (`opencode auth login`) since its
    `auth.json` normally comes from Infisical.
 
-Todoist guidance (`todoist.instructions.md`) is automatically excluded
-from the generated `AGENTS.md` and VS Code prompts on the `work` profile,
-since the `td` CLI isn't installed there.
+Todoist guidance (`todoist.instructions.md`) and headless-Chrome/CDP
+guidance (`headless-chrome.instructions.md`) are automatically excluded
+from the generated `AGENTS.md` and VS Code prompts on the `work` profile:
+the `td` CLI isn't installed there, and the wl-chrome CDP host is
+unreachable behind work firewall rules.
 
 Add the profile to the update command too, so re-runs stay scoped:
 

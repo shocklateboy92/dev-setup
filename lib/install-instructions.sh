@@ -31,9 +31,11 @@ fi
 # profile doesn't install, in which case shipping it is dead weight (and
 # actively misleading to an agent). Exclude by basename.
 #   work: no Todoist CLI -> drop todoist.instructions.md.
+#   work: the wl-chrome CDP host is firewalled off -> drop
+#         headless-chrome.instructions.md so agents don't try to reach it.
 instr_exclude=()
 if [[ "${DEV_SETUP_PROFILE:-personal}" == "work" ]]; then
-  instr_exclude+=("todoist.instructions.md")
+  instr_exclude+=("todoist.instructions.md" "headless-chrome.instructions.md")
 fi
 
 instr_is_excluded() {
