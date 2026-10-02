@@ -54,6 +54,8 @@ This will:
    runtime: symlinked into VS Code prompts dirs for Copilot, and
    concatenated (with frontmatter stripped) into
    `~/.config/opencode/AGENTS.md` for [opencode](https://opencode.ai).
+   If present, machine-local rules from
+   `~/.config/opencode/AGENTS.local.md` are appended to the generated file.
    Skills installed at `~/.agents/skills/*/` are symlinked into
    `~/.config/opencode/skills/` so opencode discovers them too.
 
